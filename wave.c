@@ -1,7 +1,7 @@
 //
 //  wave.c
 //
-// Copyright (c) 2009 Richard Dobson
+//  Copyright (c) 2009 Richard Dobson
 //
 
 #include <stdio.h>
