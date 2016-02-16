@@ -1,9 +1,7 @@
 //
 //  wave.c
-//  
 //
-//  Created by Robador Mobile on 11/17/14.
-//
+// Copyright (c) 2009 Richard Dobson
 //
 
 #include <stdio.h>
