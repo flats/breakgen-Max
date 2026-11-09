@@ -7,9 +7,11 @@
 */
 
 #include "ext.h"							// standard Max include, always required
-#include "buffer.h"
-#include "ext_atomic.h"
 #include "ext_obex.h"						// required for new style Max object
+#include "ext_buffer.h"
+#include "ext_atomic.h"
+#include <stdlib.h>
+#include <time.h>
 #include "wave.h"
 
 typedef struct t_rando {
@@ -47,6 +49,7 @@ RANDO* new_rando();
 double no_rando(RANDO* rando_gen, double val);
 double rando_replace(RANDO* rando_gen, double val);
 double rando_multi(RANDO* rando_gen, double val);
+double rando_interp(RANDO* rando_gen, double val);
 
 ///////////////////////// function prototypes
 //// standard set
@@ -62,7 +65,7 @@ void breakgen_acant(t_breakgen *x);
 void breakgen_getrand(t_breakgen *x);
 
 void breakgen_setter(t_breakgen *x, t_symbol *s, long argc, t_atom *argv);
-void breakgen_wavetype(t_breakgen *x, long n);
+void breakgen_wavetype(t_breakgen *x, t_atom_long n);
 void breakgen_setfreq(t_breakgen *x, double f);
 void breakgen_setconstsig(t_breakgen *x, double f);
 void breakgen_setsr(t_breakgen *x, double f);
@@ -77,8 +80,8 @@ static t_symbol *buffy_modified;
 void *breakgen_class;
 
 
-int C74_EXPORT main(void)
-{	
+void ext_main(void *r)
+{
 	t_class *c;
 	
 	c = class_new("breakgen", (method)breakgen_new, (method)breakgen_free, (long)sizeof(t_breakgen), 
@@ -114,8 +117,6 @@ int C74_EXPORT main(void)
 	breakgen_class = c;
     
     buffy_modified = gensym("buffer_modified");
-
-	return 0;
 }
 
 RANDO* new_rando() {
@@ -521,9 +522,9 @@ void breakgen_setconstsig(t_breakgen *x, double f)
     object_post((t_object *)x, "Constant signal value set to %f", x->constval);
 }
 
-void breakgen_wavetype(t_breakgen *x, long n)
+void breakgen_wavetype(t_breakgen *x, t_atom_long n)
 {
-    post("Wave type set to %i", n);
+    post("Wave type set to %lld", (long long)n);
     
     x->constsig = 0;
     
