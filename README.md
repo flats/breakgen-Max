@@ -12,7 +12,7 @@ This exists because I wanted to create variable tempo maps (unsteady tempos, acc
 
 ## Installation
 
-Just download the `OSX-breakgen.zip` file and drop the contents (`breakgen.mxo` and `breakgen.maxhelp`) into your Max user library. For Max 9 on macOS, that's `~/Documents/Max 9/Library/`.
+Download `OSX-breakgen.zip` from the [latest release](https://github.com/flats/breakgen-Max/releases/latest) and drop the contents (`breakgen.mxo` and `breakgen.maxhelp`) into your Max user library. For Max 9 on macOS, that's `~/Documents/Max 9/Library/`.
 
 The external is ad-hoc signed rather than signed with an Apple Developer ID, so macOS may block it after you download it. If Max says it can't load `breakgen`, remove the quarantine flag:
 
