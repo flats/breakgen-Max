@@ -1,7 +1,7 @@
 {
 	"name": "breakgen",
 	"displayname": "breakgen",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"author": "D. Flaherty",
 	"description": "Generates tempo multipliers and breakpoint files for modmetro~.",
 	"tags": [ "timing", "externals" ],

@@ -30,20 +30,28 @@ xattr -dr com.apple.quarantine ~/Documents/Max\ 9/Packages/breakgen
 
 Each `bang` outputs the next tempo multiplier. modmetro~ multiplies the length of each beat by one of these values: 1.0 leaves the beat unchanged, values above 1.0 lengthen it (slower) and values below 1.0 shorten it (faster). The values come from an oscillator that advances one step per value, so one cycle takes `sr` / `freq` steps (100 with the defaults).
 
+Every setting is an attribute, so you can type it into the object box (`breakgen @wavetype 2 @freq 50`), send it as a message (`freq 50`), or change it in the inspector, where it's saved with the patcher.
+
+| Attribute | Default | What it does |
+| --- | --- | --- |
+| `wavetype` *0–5* | 0 | Waveform: sine, triangle, square, saw down, saw up, or constant. |
+| `freq` *float* | 100 | Oscillator frequency (greater than 0). |
+| `sr` *float* | 10000 | Steps per second (greater than 0). Setting it restarts the cycle. |
+| `constval` *float* | 1.0 | Value for the constant waveform (greater than 0). |
+| `random` *0–3* | 0 | Randomness: no random, replace, multi, or multi interp. |
+| `intensity` *float* | 0.05 | How strongly random modes 2 and 3 pull values toward random ones. |
+| `interval` *int* | 1 | Steps between new random targets in mode 3 (at least 1). |
+| `buffer` *symbol* | none | The `buffer~` that `writebuf` writes into. |
+| `depth` *0–1* | 1 | How far `writefile` values swing from 1.0; 0.2 keeps beats within 20% of the tempo. |
+
 | Message | What it does |
 | --- | --- |
 | `bang` | Output the next tempo multiplier. |
-| `wavetype` *0–5* | Waveform: sine (default), triangle, square, saw down, saw up, or constant. |
-| `freq` *float* | Oscillator frequency, default 100. |
-| `sr` *float* | Steps per second, default 10000. Also restarts the cycle. |
-| `constval` *float* | Value for the constant waveform, default 1.0. |
-| `set random` *0–3* | Randomness: no random (default), replace, multi, or multi interp. |
-| `set intensity` *float* | How strongly random modes 2 and 3 pull values toward random ones, default 0.05. |
-| `set interval` *int* | Steps between new random targets in mode 3, default 1. |
-| `writefile` *steps [depth]* | Save *steps* values as a breakpoint file for modmetro~ (opens a Save dialog). *depth* below 1 scales how far the values swing from 1.0. |
-| `writebuf` *buffer steps* | Write *steps* values, centered on 0.0, into a `buffer~`. |
+| `writefile` *steps [depth]* | Save *steps* values as a breakpoint file for modmetro~ (opens a Save dialog). A *depth* given here overrides the attribute. |
+| `writebuf` *[buffer] steps* | Write *steps* values, centered on 0.0, into the `buffer~` set by the `buffer` attribute. Naming a buffer first sets the attribute. |
+| `set` *attribute value* | The older way to set an attribute (`set freq 100`), kept so existing patches keep working. |
 
-`set` *parameter value* also works for `freq`, `sr`, `wavetype`, `constval` and `buffer`. In Max, open the help patcher (right-click the object and choose Open breakgen Help) for working examples, or the reference page for full details on every message.
+In Max, open the help patcher (right-click the object and choose Open breakgen Help) for working examples, or the reference page for full details.
 
 ## Building
 

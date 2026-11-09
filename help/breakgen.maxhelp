@@ -279,16 +279,20 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "comment",
-									"text": "waveform",
+									"maxclass": "attrui",
+									"attr": "wavetype",
 									"patching_rect": [
-										190.0,
+										180.0,
 										145.0,
-										80.0,
-										21.0
+										210.0,
+										23.0
 									],
 									"numinlets": 1,
-									"numoutlets": 0,
+									"numoutlets": 1,
+									"outlettype": [
+										""
+									],
+									"parameter_enable": 0,
 									"id": "basic-7"
 								}
 							},
@@ -296,33 +300,17 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "umenu",
-									"items": [
-										"sine",
-										",",
-										"triangle",
-										",",
-										"square",
-										",",
-										"saw",
-										"down",
-										",",
-										"saw",
-										"up",
-										",",
-										"constant"
-									],
+									"maxclass": "attrui",
+									"attr": "freq",
 									"patching_rect": [
-										190.0,
-										170.0,
-										110.0,
+										180.0,
+										172.0,
+										210.0,
 										23.0
 									],
 									"numinlets": 1,
-									"numoutlets": 3,
+									"numoutlets": 1,
 									"outlettype": [
-										"int",
-										"",
 										""
 									],
 									"parameter_enable": 0,
@@ -333,19 +321,20 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "newobj",
-									"text": "prepend wavetype",
+									"maxclass": "attrui",
+									"attr": "sr",
 									"patching_rect": [
-										190.0,
-										205.0,
-										112.0,
+										180.0,
+										199.0,
+										210.0,
 										23.0
 									],
-									"numinlets": 2,
+									"numinlets": 1,
 									"numoutlets": 1,
 									"outlettype": [
 										""
 									],
+									"parameter_enable": 0,
 									"id": "basic-9"
 								}
 							},
@@ -353,17 +342,38 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "comment",
-									"text": "speed: one cycle = sr / freq steps",
+									"maxclass": "attrui",
+									"attr": "constval",
 									"patching_rect": [
-										340.0,
+										180.0,
+										226.0,
+										210.0,
+										23.0
+									],
+									"numinlets": 1,
+									"numoutlets": 1,
+									"outlettype": [
+										""
+									],
+									"parameter_enable": 0,
+									"id": "basic-10"
+								}
+							},
+							{
+								"box": {
+									"fontname": "Arial",
+									"fontsize": 13.0,
+									"maxclass": "comment",
+									"text": "presets (one cycle = sr / freq steps)",
+									"patching_rect": [
+										410.0,
 										145.0,
-										230.0,
+										250.0,
 										21.0
 									],
 									"numinlets": 1,
 									"numoutlets": 0,
-									"id": "basic-10"
+									"id": "basic-11"
 								}
 							},
 							{
@@ -373,28 +383,8 @@
 									"maxclass": "message",
 									"text": "freq 100",
 									"patching_rect": [
-										340.0,
-										170.0,
-										62.0,
-										23.0
-									],
-									"numinlets": 2,
-									"numoutlets": 1,
-									"outlettype": [
-										""
-									],
-									"id": "basic-11"
-								}
-							},
-							{
-								"box": {
-									"fontname": "Arial",
-									"fontsize": 13.0,
-									"maxclass": "message",
-									"text": "freq 400",
-									"patching_rect": [
 										410.0,
-										170.0,
+										172.0,
 										62.0,
 										23.0
 									],
@@ -411,11 +401,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "sr 10000",
+									"text": "freq 400",
 									"patching_rect": [
-										340.0,
-										205.0,
-										66.0,
+										480.0,
+										172.0,
+										62.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -431,11 +421,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "sr 2500",
+									"text": "sr 10000",
 									"patching_rect": [
-										414.0,
-										205.0,
-										58.0,
+										410.0,
+										199.0,
+										66.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -450,16 +440,19 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "comment",
-									"text": "constant level",
+									"maxclass": "message",
+									"text": "sr 2500",
 									"patching_rect": [
-										570.0,
-										145.0,
-										100.0,
-										21.0
+										484.0,
+										199.0,
+										58.0,
+										23.0
 									],
-									"numinlets": 1,
-									"numoutlets": 0,
+									"numinlets": 2,
+									"numoutlets": 1,
+									"outlettype": [
+										""
+									],
 									"id": "basic-15"
 								}
 							},
@@ -470,8 +463,8 @@
 									"maxclass": "message",
 									"text": "constval 1.25",
 									"patching_rect": [
-										570.0,
-										170.0,
+										410.0,
+										226.0,
 										92.0,
 										23.0
 									],
@@ -491,7 +484,7 @@
 									"text": "breakgen",
 									"patching_rect": [
 										30.0,
-										265.0,
+										280.0,
 										64.0,
 										23.0
 									],
@@ -510,7 +503,7 @@
 									"maxclass": "flonum",
 									"patching_rect": [
 										30.0,
-										305.0,
+										320.0,
 										70.0,
 										23.0
 									],
@@ -533,7 +526,7 @@
 									"text": "multiplier for the next beat",
 									"patching_rect": [
 										106.0,
-										304.0,
+										319.0,
 										190.0,
 										25.0
 									],
@@ -551,7 +544,7 @@
 									"text": "zl.stream 100",
 									"patching_rect": [
 										30.0,
-										345.0,
+										360.0,
 										92.0,
 										23.0
 									],
@@ -569,9 +562,9 @@
 									"maxclass": "multislider",
 									"patching_rect": [
 										30.0,
-										377.0,
+										392.0,
 										330.0,
-										130.0
+										125.0
 									],
 									"numinlets": 1,
 									"numoutlets": 2,
@@ -598,7 +591,7 @@
 									"text": "the last 100 values, from 0.0 (bottom) to 2.0 (top)",
 									"patching_rect": [
 										30.0,
-										512.0,
+										522.0,
 										330.0,
 										21.0
 									],
@@ -612,7 +605,7 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "comment",
-									"text": "modmetro~ multiplies the length of each beat by one of these values: 1.0 leaves the beat alone, above 1.0 makes it longer (slower) and below 1.0 shorter (faster).\n\nOne waveform cycle takes sr / freq steps, so the defaults (sr 10000, freq 100) make one slow swing every 100 beats. Sending sr also restarts the cycle.\n\nThe waveforms swing the full 0.0 to 2.0. To keep beats within, say, 20% of the tempo, write the values with writefile's depth argument (see the write tab).",
+									"text": "modmetro~ multiplies the length of each beat by one of these values: 1.0 leaves the beat alone, above 1.0 makes it longer (slower) and below 1.0 shorter (faster).\n\nOne waveform cycle takes sr / freq steps, so the defaults make one slow swing every 100 beats. Setting sr also restarts the cycle.\n\nEvery setting is an attribute: type it into the box (breakgen @wavetype 2 @freq 50), send it as a message, or change it in the inspector.",
 									"patching_rect": [
 										385.0,
 										290.0,
@@ -621,7 +614,7 @@
 									],
 									"numinlets": 1,
 									"numoutlets": 0,
-									"linecount": 14,
+									"linecount": 12,
 									"id": "basic-23"
 								}
 							}
@@ -631,30 +624,6 @@
 								"patchline": {
 									"source": [
 										"basic-3",
-										0
-									],
-									"destination": [
-										"basic-17",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"basic-9",
-										0
-									],
-									"destination": [
-										"basic-17",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"basic-11",
 										0
 									],
 									"destination": [
@@ -702,7 +671,67 @@
 							{
 								"patchline": {
 									"source": [
+										"basic-15",
+										0
+									],
+									"destination": [
+										"basic-17",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
 										"basic-16",
+										0
+									],
+									"destination": [
+										"basic-17",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
+										"basic-7",
+										0
+									],
+									"destination": [
+										"basic-17",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
+										"basic-8",
+										0
+									],
+									"destination": [
+										"basic-17",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
+										"basic-9",
+										0
+									],
+									"destination": [
+										"basic-17",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
+										"basic-10",
 										0
 									],
 									"destination": [
@@ -731,18 +760,6 @@
 									],
 									"destination": [
 										"basic-17",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"basic-8",
-										0
-									],
-									"destination": [
-										"basic-9",
 										0
 									]
 								}
@@ -880,16 +897,16 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "comment",
-									"text": "set random layers randomness on top of the waveform. intensity sets how strongly modes 2 and 3 pull each value toward a random one, and interval sets how many steps mode 3 takes to glide to each new random target.",
+									"text": "The random attribute layers randomness on top of the waveform. intensity sets how strongly modes 2 and 3 pull each value toward a random one, and interval sets how many steps mode 3 takes to glide to each new random target.",
 									"patching_rect": [
 										10.0,
 										48.0,
 										650.0,
-										40.0
+										55.0
 									],
 									"numinlets": 1,
 									"numoutlets": 0,
-									"linecount": 2,
+									"linecount": 3,
 									"id": "random-2"
 								}
 							},
@@ -897,16 +914,20 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "comment",
-									"text": "mode",
+									"maxclass": "attrui",
+									"attr": "random",
 									"patching_rect": [
 										30.0,
-										100.0,
-										60.0,
-										21.0
+										105.0,
+										210.0,
+										23.0
 									],
 									"numinlets": 1,
-									"numoutlets": 0,
+									"numoutlets": 1,
+									"outlettype": [
+										""
+									],
+									"parameter_enable": 0,
 									"id": "random-3"
 								}
 							},
@@ -914,29 +935,17 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "umenu",
-									"items": [
-										"no",
-										"random",
-										",",
-										"replace",
-										",",
-										"multi",
-										",",
-										"multi",
-										"interp"
-									],
+									"maxclass": "attrui",
+									"attr": "intensity",
 									"patching_rect": [
 										30.0,
-										125.0,
-										120.0,
+										132.0,
+										210.0,
 										23.0
 									],
 									"numinlets": 1,
-									"numoutlets": 3,
+									"numoutlets": 1,
 									"outlettype": [
-										"int",
-										"",
 										""
 									],
 									"parameter_enable": 0,
@@ -947,19 +956,20 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "newobj",
-									"text": "prepend set random",
+									"maxclass": "attrui",
+									"attr": "interval",
 									"patching_rect": [
 										30.0,
-										160.0,
-										122.0,
+										159.0,
+										210.0,
 										23.0
 									],
-									"numinlets": 2,
+									"numinlets": 1,
 									"numoutlets": 1,
 									"outlettype": [
 										""
 									],
+									"parameter_enable": 0,
 									"id": "random-5"
 								}
 							},
@@ -970,10 +980,10 @@
 									"maxclass": "comment",
 									"text": "0  no random: the waveform as it is\n1  replace: a new random value from 0.0 to 2.0 every step\n2  multi: move toward a new random value by intensity\n3  multi interp: like multi, but the random value glides to a new target every interval steps",
 									"patching_rect": [
-										215.0,
+										265.0,
 										100.0,
-										445.0,
-										80.0
+										395.0,
+										95.0
 									],
 									"numinlets": 1,
 									"numoutlets": 0,
@@ -986,7 +996,7 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "comment",
-									"text": "intensity (default 0.05): 0 = none, 1 = fully random",
+									"text": "intensity: 0 = none, 1 = fully random",
 									"patching_rect": [
 										30.0,
 										200.0,
@@ -1003,11 +1013,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "set intensity 0.05",
+									"text": "intensity 0.05",
 									"patching_rect": [
 										30.0,
 										225.0,
-										120.0,
+										96.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1023,11 +1033,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "set intensity 0.3",
+									"text": "intensity 0.3",
 									"patching_rect": [
-										160.0,
+										136.0,
 										225.0,
-										114.0,
+										90.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1043,11 +1053,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "set intensity 1",
+									"text": "intensity 1",
 									"patching_rect": [
-										284.0,
+										236.0,
 										225.0,
-										102.0,
+										78.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1063,7 +1073,7 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "comment",
-									"text": "interval, for mode 3 (default 1)",
+									"text": "interval, for mode 3",
 									"patching_rect": [
 										30.0,
 										260.0,
@@ -1080,11 +1090,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "set interval 1",
+									"text": "interval 1",
 									"patching_rect": [
 										30.0,
 										285.0,
-										96.0,
+										72.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1100,11 +1110,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "set interval 10",
+									"text": "interval 10",
 									"patching_rect": [
-										136.0,
+										112.0,
 										285.0,
-										104.0,
+										80.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1337,6 +1347,30 @@
 							{
 								"patchline": {
 									"source": [
+										"random-3",
+										0
+									],
+									"destination": [
+										"random-21",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
+										"random-4",
+										0
+									],
+									"destination": [
+										"random-21",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
 										"random-5",
 										0
 									],
@@ -1426,18 +1460,6 @@
 									],
 									"destination": [
 										"random-21",
-										0
-									]
-								}
-							},
-							{
-								"patchline": {
-									"source": [
-										"random-4",
-										0
-									],
-									"destination": [
-										"random-5",
 										0
 									]
 								}
@@ -1604,11 +1626,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "writefile 200 0.2",
+									"text": "writefile 200",
 									"patching_rect": [
 										30.0,
 										105.0,
-										118.0,
+										96.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1624,7 +1646,7 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "comment",
-									"text": "200 beats that stay within 20% of the tempo (0.8 to 1.2). A Save dialog opens first.",
+									"text": "200 beats using the depth attribute (0.2 below), so they stay within 20% of the tempo. A Save dialog opens first.",
 									"patching_rect": [
 										240.0,
 										100.0,
@@ -1642,11 +1664,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "writefile 200",
+									"text": "writefile 200 1",
 									"patching_rect": [
 										30.0,
 										155.0,
-										96.0,
+										106.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1662,7 +1684,7 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "comment",
-									"text": "Full depth: beats from zero length up to twice as long. The depth argument only applies when it is below 1.",
+									"text": "A depth given here overrides the attribute. 1 is the full range: beats from zero length up to twice as long.",
 									"patching_rect": [
 										240.0,
 										150.0,
@@ -1718,11 +1740,11 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "message",
-									"text": "writebuf breakgen-help 1000",
+									"text": "writebuf 1000",
 									"patching_rect": [
 										30.0,
 										255.0,
-										176.0,
+										96.0,
 										23.0
 									],
 									"numinlets": 2,
@@ -1738,7 +1760,7 @@
 									"fontname": "Arial",
 									"fontsize": 13.0,
 									"maxclass": "comment",
-									"text": "Writes up to 1000 values into the buffer~, stopping at its end. These center on 0.0 instead of 1.0, the form modmetro~'s audiomod input expects. Every channel gets the same value.",
+									"text": "Writes up to 1000 values into the buffer~ named by the buffer attribute, centered on 0.0 for modmetro~'s audiomod input. writebuf <name> 1000 sets the attribute first.",
 									"patching_rect": [
 										240.0,
 										250.0,
@@ -1755,12 +1777,12 @@
 								"box": {
 									"fontname": "Arial",
 									"fontsize": 13.0,
-									"maxclass": "newobj",
-									"text": "breakgen",
+									"maxclass": "attrui",
+									"attr": "depth",
 									"patching_rect": [
 										30.0,
-										330.0,
-										64.0,
+										292.0,
+										200.0,
 										23.0
 									],
 									"numinlets": 1,
@@ -1768,7 +1790,28 @@
 									"outlettype": [
 										""
 									],
+									"parameter_enable": 0,
 									"id": "write-11"
+								}
+							},
+							{
+								"box": {
+									"fontname": "Arial",
+									"fontsize": 13.0,
+									"maxclass": "newobj",
+									"text": "breakgen @buffer breakgen-help @depth 0.2",
+									"patching_rect": [
+										30.0,
+										335.0,
+										262.0,
+										23.0
+									],
+									"numinlets": 1,
+									"numoutlets": 1,
+									"outlettype": [
+										""
+									],
+									"id": "write-12"
 								}
 							},
 							{
@@ -1789,7 +1832,7 @@
 										"float",
 										"bang"
 									],
-									"id": "write-12"
+									"id": "write-13"
 								}
 							},
 							{
@@ -1807,7 +1850,7 @@
 									"numinlets": 1,
 									"numoutlets": 0,
 									"bubble": 1,
-									"id": "write-13"
+									"id": "write-14"
 								}
 							},
 							{
@@ -1825,7 +1868,7 @@
 									"numinlets": 1,
 									"numoutlets": 0,
 									"linecount": 5,
-									"id": "write-14"
+									"id": "write-15"
 								}
 							}
 						],
@@ -1837,7 +1880,7 @@
 										0
 									],
 									"destination": [
-										"write-11",
+										"write-12",
 										0
 									]
 								}
@@ -1849,7 +1892,7 @@
 										0
 									],
 									"destination": [
-										"write-11",
+										"write-12",
 										0
 									]
 								}
@@ -1861,7 +1904,7 @@
 										0
 									],
 									"destination": [
-										"write-11",
+										"write-12",
 										0
 									]
 								}
@@ -1873,7 +1916,19 @@
 										0
 									],
 									"destination": [
+										"write-12",
+										0
+									]
+								}
+							},
+							{
+								"patchline": {
+									"source": [
 										"write-11",
+										0
+									],
+									"destination": [
+										"write-12",
 										0
 									]
 								}

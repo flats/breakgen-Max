@@ -14,7 +14,10 @@
 		The oscillator can be a sine, triangle, square, saw down or saw up wave, or a constant value, and its output can be randomized. Use <m>writefile</m> to save a run of values as a breakpoint text file that <o>modmetro~</o> can read, or <m>writebuf</m> to write them into a <o>buffer~</o>.
 		<br />
 		<br />
-		The oscillator advances by <m>freq</m> / <m>sr</m> of a cycle per step, so one full cycle takes <m>sr</m> / <m>freq</m> steps. With the defaults (<m>sr</m> 10000, <m>freq</m> 100) a cycle lasts 100 beats.
+		The oscillator advances by <at>freq</at> / <at>sr</at> of a cycle per step, so one full cycle takes <at>sr</at> / <at>freq</at> steps. With the defaults (<at>sr</at> 10000, <at>freq</at> 100) a cycle lasts 100 beats.
+		<br />
+		<br />
+		Every setting is an attribute: type it into the object box (<m>breakgen @wavetype 2 @freq 50</m>), send it as a message (<m>freq 50</m>), or change it in the inspector, where it is saved with the patcher.
 	</description>
 
 	<!--METADATA-->
@@ -28,10 +31,10 @@
 	<inletlist>
 		<inlet id="0" type="bang">
 			<digest>
-				(bang) Output the next tempo multiplier, (messages) set parameters or write a file or buffer~
+				(bang) Output the next tempo multiplier, (messages) attributes, set, writefile, writebuf
 			</digest>
 			<description>
-				A <m>bang</m> outputs the next value. All other messages configure the oscillator and randomization or write values to a file or <o>buffer~</o>.
+				A <m>bang</m> outputs the next value. Attribute messages change the oscillator and randomization, and <m>writefile</m> and <m>writebuf</m> write a run of values to a file or <o>buffer~</o>.
 			</description>
 		</inlet>
 	</inletlist>
@@ -43,7 +46,7 @@
 				(float) Tempo multiplier for the next beat's length
 			</digest>
 			<description>
-				The current oscillator value plus 1.0, after randomization. The periodic waveforms range from 0.0 to 2.0, so at full depth a beat can shrink to nothing or double in length. <m>writefile</m> can scale this range down; the outlet always sends the full range.
+				The current oscillator value plus 1.0, after randomization. The periodic waveforms range from 0.0 to 2.0, so at full depth a beat can shrink to nothing or double in length. <m>writefile</m> can scale this range down (see <at>depth</at>); the outlet always sends the full range.
 			</description>
 		</outlet>
 	</outletlist>
@@ -57,96 +60,7 @@
 				Output the next tempo multiplier
 			</digest>
 			<description>
-				Advances the oscillator one step, applies the current random mode, and sends the result out the outlet.
-			</description>
-		</method>
-
-		<method name="wavetype">
-			<arglist>
-				<arg name="type" optional="0" type="int" />
-			</arglist>
-			<digest>
-				Choose the waveform
-			</digest>
-			<description>
-				0 = sine (default), 1 = triangle, 2 = square, 3 = saw down, 4 = saw up, 5 = constant. Type 5 outputs the <m>constval</m> value on every step instead of an oscillator. Values outside 0–5 are reported as an error and ignored. Changing the waveform keeps the oscillator's current phase. Same as <m>set wavetype</m>.
-			</description>
-		</method>
-
-		<method name="freq">
-			<arglist>
-				<arg name="frequency" optional="0" type="float" />
-			</arglist>
-			<digest>
-				Set the oscillator frequency
-			</digest>
-			<description>
-				Together with <m>sr</m>, sets how quickly the waveform cycles: one cycle takes <m>sr</m> / <m>freq</m> steps. Must be greater than 0; other values are ignored. The default is 100. Same as <m>set freq</m>.
-			</description>
-		</method>
-
-		<method name="sr">
-			<arglist>
-				<arg name="rate" optional="0" type="float" />
-			</arglist>
-			<digest>
-				Set the step rate and restart the oscillator
-			</digest>
-			<description>
-				The number of steps per second of the oscillator, by analogy with an audio sample rate. One cycle takes <m>sr</m> / <m>freq</m> steps. Setting it also resets the oscillator's phase to the start of the cycle, which makes it the way to restart a waveform from the beginning. Must be greater than 0. The default is 10000. Same as <m>set sr</m>.
-			</description>
-		</method>
-
-		<method name="constval">
-			<arglist>
-				<arg name="value" optional="0" type="float" />
-			</arglist>
-			<digest>
-				Set the value for the constant waveform
-			</digest>
-			<description>
-				The value output on every step when <m>wavetype</m> is 5. Must be greater than 0; other values are ignored (<m>set constval</m> accepts any number). The default is 1.0.
-			</description>
-		</method>
-
-		<method name="set">
-			<arglist>
-				<arg name="parameter" optional="0" type="symbol" />
-				<arg name="value" optional="0" type="atom" />
-			</arglist>
-			<digest>
-				Set a parameter by name
-			</digest>
-			<description>
-				The word <m>set</m> followed by a parameter name and one value. Numeric parameters accept ints or floats.
-				<br />
-				<br />
-				<m>set freq</m> <i>float</i>: oscillator frequency, greater than 0 (see <m>freq</m>).
-				<br />
-				<m>set sr</m> <i>float</i>: step rate, greater than 0; also restarts the oscillator (see <m>sr</m>).
-				<br />
-				<m>set wavetype</m> <i>int</i>: waveform, 0–5 (see <m>wavetype</m>).
-				<br />
-				<m>set constval</m> <i>float</i>: value for the constant waveform. Unlike the <m>constval</m> message, any value is accepted.
-				<br />
-				<m>set random</m> <i>int</i>: random mode, 0–3:
-				<br />
-				    0 = no random (default).
-				<br />
-				    1 = replace: every output is a new random value between 0.0 and 2.0, ignoring the waveform.
-				<br />
-				    2 = multi: each output moves toward a new random value between 0.0 and 2.0 by the <m>intensity</m> fraction.
-				<br />
-				    3 = multi interp: like multi, but the random target glides smoothly to a new random value every <m>interval</m> steps.
-				<br />
-				<m>set intensity</m> <i>float</i>: how far modes 2 and 3 pull each output toward the random value. 0 = not at all, 1 = all the way; negative values push away from it. The default is 0.05.
-				<br />
-				<m>set interval</m> <i>int</i>: the number of steps between new random targets in mode 3. Must be at least 1. The default is 1.
-				<br />
-				<m>set buffer</m> <i>symbol</i>: names a <o>buffer~</o> to reference and reports whether it exists. <m>writebuf</m> takes its own buffer name, so this currently has no other effect.
-				<br />
-				<br />
-				An unknown parameter, a missing value or a value of the wrong type is reported in the Max Console and leaves the setting unchanged.
+				Advances the oscillator one step, applies the current <at>random</at> mode, and sends the result out the outlet.
 			</description>
 		</method>
 
@@ -162,24 +76,179 @@
 				Opens a Save dialog, then writes <i>steps</i> values to the chosen text file, one per line with no trailing newline. This is the format <o>modmetro~</o> reads. Each value advances the oscillator exactly as a <m>bang</m> would.
 				<br />
 				<br />
-				The optional <i>depth</i> scales each value's distance from 1.0, written as (value − 1) × <i>depth</i> + 1. A depth of 0.2 keeps a sine between 0.8 and 1.2, i.e. beats up to 20% shorter or longer. It is only used when it is less than 1.0; otherwise the full range is written, which lets beats shrink to zero length at the bottom of a sine.
+				Each value's distance from 1.0 is scaled by a depth, written as (value − 1) × depth + 1. The depth comes from the <at>depth</at> attribute (default 1, the full range) unless you give one here. An explicit depth of 1 or more means full depth, and values below 1 are used as given, as in earlier versions. A depth of 0.2 keeps a sine between 0.8 and 1.2, i.e. beats up to 20% shorter or longer; full depth lets beats shrink to zero length at the bottom of a sine.
 			</description>
 		</method>
 
 		<method name="writebuf">
 			<arglist>
-				<arg name="buffer-name" optional="0" type="symbol" />
+				<arg name="buffer-name" optional="1" type="symbol" />
 				<arg name="steps" optional="0" type="int" />
 			</arglist>
 			<digest>
 				Write values into a buffer~
 			</digest>
 			<description>
-				Writes <i>steps</i> values into the named <o>buffer~</o>, one per sample frame, stopping at the end of the buffer. Each value advances the oscillator as a <m>bang</m> would, but 1.0 is subtracted so the values center on 0.0 (−1.0 to 1.0 for the periodic waveforms). In a multichannel buffer every channel gets the same value. This also makes the buffer the object's referenced buffer (see <m>set buffer</m>). An error is reported if the buffer doesn't exist.
+				Writes <i>steps</i> values into the <o>buffer~</o> named by the <at>buffer</at> attribute, one per sample frame, stopping at the end of the buffer. Giving a buffer name first (<m>writebuf mybuffer 1000</m>) sets the <at>buffer</at> attribute and then writes. Each value advances the oscillator as a <m>bang</m> would, but 1.0 is subtracted so the values center on 0.0 (−1.0 to 1.0 for the periodic waveforms), the form <o>modmetro~</o>'s audiomod input expects. In a multichannel buffer every channel gets the same value. An error is reported if no buffer is set or the buffer doesn't exist.
+			</description>
+		</method>
+
+		<method name="set">
+			<arglist>
+				<arg name="attribute" optional="0" type="symbol" />
+				<arg name="value" optional="0" type="atom" />
+			</arglist>
+			<digest>
+				Set an attribute by name (older form)
+			</digest>
+			<description>
+				<m>set</m> followed by an attribute name and value, e.g. <m>set freq 100</m>, is the same as sending the attribute message itself (<m>freq 100</m>). It is kept so patches written for earlier versions keep working. An unknown name, a missing value or an invalid value is reported in the Max Console and leaves the setting unchanged.
 			</description>
 		</method>
 
 	</methodlist>
+
+	<!--ATTRIBUTES-->
+	<attributelist>
+
+		<attribute name="wavetype" get="1" set="1" type="int" size="1">
+			<digest>
+				Waveform
+			</digest>
+			<description>
+				0 = sine (default), 1 = triangle, 2 = square, 3 = saw down, 4 = saw up, 5 = constant. Type 5 outputs the <at>constval</at> value on every step instead of an oscillator. Changing the waveform keeps the oscillator's current phase. Values outside 0–5 are reported as an error and ignored.
+			</description>
+			<attributelist>
+				<attribute name="basic" get="1" set="1" type="int" size="1" value="1" />
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Oscillator" />
+				<attribute name="default" get="1" set="1" type="int" size="1" value="0" />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Waveform" />
+				<attribute name="style" get="1" set="1" type="symbol" size="1" value="enumindex" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="freq" get="1" set="1" type="float" size="1">
+			<digest>
+				Oscillator frequency
+			</digest>
+			<description>
+				Together with <at>sr</at>, sets how quickly the waveform cycles: one cycle takes <at>sr</at> / <at>freq</at> steps. Must be greater than 0. The default is 100.
+			</description>
+			<attributelist>
+				<attribute name="basic" get="1" set="1" type="int" size="1" value="1" />
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Oscillator" />
+				<attribute name="default" get="1" set="1" type="float" size="1" value="100." />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Frequency" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="sr" get="1" set="1" type="float" size="1">
+			<digest>
+				Steps per second; setting it restarts the waveform
+			</digest>
+			<description>
+				The number of steps per second of the oscillator, by analogy with an audio sample rate. One cycle takes <at>sr</at> / <at>freq</at> steps. Setting it also resets the oscillator's phase to the start of the cycle, which makes it the way to restart a waveform from the beginning. Must be greater than 0. The default is 10000.
+			</description>
+			<attributelist>
+				<attribute name="basic" get="1" set="1" type="int" size="1" value="1" />
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Oscillator" />
+				<attribute name="default" get="1" set="1" type="float" size="1" value="10000." />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Steps per Second" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="constval" get="1" set="1" type="float" size="1">
+			<digest>
+				Value for the constant waveform
+			</digest>
+			<description>
+				The value output on every step when <at>wavetype</at> is 5. Must be greater than 0 (earlier versions accepted any value through <m>set constval</m>). The default is 1.0.
+			</description>
+			<attributelist>
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Oscillator" />
+				<attribute name="default" get="1" set="1" type="float" size="1" value="1." />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Constant Value" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="random" get="1" set="1" type="int" size="1">
+			<digest>
+				Random mode
+			</digest>
+			<description>
+				0 = no random (default): the waveform as it is.
+				<br />
+				1 = replace: every output is a new random value between 0.0 and 2.0, ignoring the waveform.
+				<br />
+				2 = multi: each output moves toward a new random value between 0.0 and 2.0 by the <at>intensity</at> fraction.
+				<br />
+				3 = multi interp: like multi, but the random target glides smoothly to a new random value every <at>interval</at> steps.
+			</description>
+			<attributelist>
+				<attribute name="basic" get="1" set="1" type="int" size="1" value="1" />
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Random" />
+				<attribute name="default" get="1" set="1" type="int" size="1" value="0" />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Random Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" size="1" value="enumindex" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="intensity" get="1" set="1" type="float" size="1">
+			<digest>
+				Strength of random modes 2 and 3
+			</digest>
+			<description>
+				How far <at>random</at> modes 2 and 3 pull each output toward the random value: 0 = not at all, 1 = all the way. Negative values push away from it. The default is 0.05.
+			</description>
+			<attributelist>
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Random" />
+				<attribute name="default" get="1" set="1" type="float" size="1" value="0.05" />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Random Intensity" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="interval" get="1" set="1" type="int" size="1">
+			<digest>
+				Steps between random targets in mode 3
+			</digest>
+			<description>
+				The number of steps <at>random</at> mode 3 takes to glide to each new random target. Must be a whole number of at least 1. The default is 1.
+			</description>
+			<attributelist>
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Random" />
+				<attribute name="default" get="1" set="1" type="int" size="1" value="1" />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Random Interval" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="buffer" get="1" set="1" type="symbol" size="1">
+			<digest>
+				buffer~ for writebuf
+			</digest>
+			<description>
+				The name of the <o>buffer~</o> that <m>writebuf</m> writes into. There is no buffer by default. <m>writebuf</m> <i>name steps</i> also sets this attribute.
+			</description>
+			<attributelist>
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Output" />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="Buffer" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="depth" get="1" set="1" type="float" size="1">
+			<digest>
+				Default depth for writefile
+			</digest>
+			<description>
+				How far the values written by <m>writefile</m> swing from 1.0, from 0 (every value is 1.0) to 1 (the full range, the default). A depth of 0.2 keeps beats within 20% of the tempo. A depth given with <m>writefile</m> overrides it. The outlet and <m>writebuf</m> are not affected.
+			</description>
+			<attributelist>
+				<attribute name="category" get="1" set="1" type="symbol" size="1" value="Output" />
+				<attribute name="default" get="1" set="1" type="float" size="1" value="1." />
+				<attribute name="label" get="1" set="1" type="symbol" size="1" value="File Depth" />
+			</attributelist>
+		</attribute>
+
+	</attributelist>
 
 	<!--SEEALSO-->
 	<seealsolist>
