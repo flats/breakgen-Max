@@ -1,9 +1,13 @@
 /**
 	@file
-	breakgen - an object for generating breakpoint files for modmetro~
-	jeremy bernstein - jeremy@bootsquad.com
+	breakgen - generates tempo multipliers (and breakpoint files of them) for modmetro~
 
-	@ingroup	examples	
+	Each bang advances an oscillator (sine, triangle, square, saw down, saw up, or a
+	constant) by freq/sr of a cycle, optionally randomizes the result, and outputs it
+	offset to center on 1.0. modmetro~ multiplies each beat's length by one of these
+	values. See docs/refpages/breakgen-ref/breakgen.maxref.xml for every message.
+
+	D. Flaherty, started from the Cycling '74 Max SDK "simplemax" example.
 */
 
 #include "ext.h"							// standard Max include, always required
@@ -180,13 +184,14 @@ void breakgen_acant(t_breakgen *x)
 	object_post((t_object *)x, "can't touch this!");
 }
 
+/* hover help for the inlet and outlet (Max passes a 512-byte buffer) */
 void breakgen_assist(t_breakgen *x, void *b, long m, long a, char *s)
 {
-	if (m == ASSIST_INLET) { //inlet
-		sprintf(s, "I am inlet %ld", a);
-	} 
-	else {	// outlet
-		sprintf(s, "I am outlet %ld", a); 			
+	if (m == ASSIST_INLET) {
+		strncpy_zero(s, "(bang) Output the next tempo multiplier, (messages) set, wavetype, freq, sr, constval, writefile, writebuf", 512);
+	}
+	else {
+		strncpy_zero(s, "(float) Tempo multiplier for the next beat's length: 1.0 = unchanged, 1.1 = 10% longer (slower), 0.9 = 10% shorter (faster)", 512);
 	}
 }
 

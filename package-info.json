@@ -1,0 +1,19 @@
+{
+	"name": "breakgen",
+	"displayname": "breakgen",
+	"version": "1.2.0",
+	"author": "D. Flaherty",
+	"description": "Generates tempo multipliers and breakpoint files for modmetro~.",
+	"tags": [ "timing", "externals" ],
+	"website": "https://github.com/flats/breakgen-Max",
+	"extends": "",
+	"extensible": 0,
+	"max_version_min": "none",
+	"max_version_max": "none",
+	"os": {
+		"macintosh": {
+			"min_version": "none",
+			"platform": [ "x64", "aarch64" ]
+		}
+	}
+}

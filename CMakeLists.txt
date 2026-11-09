@@ -30,7 +30,7 @@ add_library(${PROJECT_NAME} MODULE
 # Substituted into max-sdk-base/script/Info.plist.in
 set(AUTHOR_DOMAIN "com.github.flats")
 set(BUNDLE_IDENTIFIER "breakgen")
-set(PACKAGE_VERSION "1.1.0")
+set(PACKAGE_VERSION "1.2.0")
 set(COPYRIGHT_STRING "Copyright (c) 2016 D. Flaherty")
 set(EXCLUDE_FROM_COLLECTIVES "no")
 
