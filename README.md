@@ -1,10 +1,10 @@
-A tempo multiplier breakpoint file generator for Max 7. Intended to be used with [modmetro~](http://github.com/flats/modmetro-Max).
+A tempo multiplier breakpoint file generator for Max. Intended to be used with [modmetro~](http://github.com/flats/modmetro-Max).
 
-This is a Max external written against [version 6.1.4 of the MaxSDK](https://cycling74.com/sdk/MaxSDK-6.1.4/html/index.html). It should be compatible with most 32-bit (Max 5 and earlier) and 64-bit versions of Max, but I've only tested it extensively against Max 7. It creates breakpoint text files contained sequential tempo multipliers based on a variety of factors. These factors are intended to modulate a given tempo beat by beat when used with [modmetro~](http://github.com/flats/modmetro-Max).
+This is a Max external, originally written against version 6.1.4 of the Max SDK and tested against Max 7. It now builds with the current [Max SDK](https://github.com/Cycling74/max-sdk-base) as a universal binary (Apple Silicon and Intel) and has been tested in Max 9. It creates breakpoint text files contained sequential tempo multipliers based on a variety of factors. These factors are intended to modulate a given tempo beat by beat when used with [modmetro~](http://github.com/flats/modmetro-Max).
 
 This external uses the wave.c library by Richard Dobson from the fantabulous [_The Audio Programming Book_](https://mitpress.mit.edu/books/audio-programming-book).
 
-This patch has only been tested on OS X and may not work on other platforms (especially the parts related to file handling).
+This patch has only been tested on macOS and may not work on other platforms (especially the parts related to file handling).
 
 ## Why This Exists
 
@@ -12,7 +12,13 @@ This exists because I wanted to create variable tempo maps (unsteady tempos, acc
 
 ## Installation
 
-Just download the `OSX-modmetro~.zip` file and drop the contents (`modmetro~.mxo` and `modmetro~.maxhelp`) into your Max 7 user library. On OS X, that's probably `/Users/Shared/Max 7/Library/`.
+Just download the `OSX-breakgen.zip` file and drop the contents (`breakgen.mxo` and `breakgen.maxhelp`) into your Max user library. For Max 9 on macOS, that's `~/Documents/Max 9/Library/`.
+
+The external is ad-hoc signed rather than signed with an Apple Developer ID, so macOS may block it after you download it. If Max says it can't load `breakgen`, remove the quarantine flag:
+
+```
+xattr -dr com.apple.quarantine ~/Documents/Max\ 9/Library/breakgen.mxo
+```
 
 ## Building
 
