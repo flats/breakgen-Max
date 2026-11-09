@@ -19,34 +19,37 @@
 #include "wave.h"
 
 typedef struct t_rando {
-    short       mode; /* mode of random/roughing */
-    double      intensity; /* intensity factor for random/roughing - less than 1 */
+    double      intensity; /* how far modes 2 and 3 pull toward the random value (attribute) */
+    t_atom_long interval; /* steps between random targets in mode 3 (attribute) */
     double      current; /* current random value */
     double      prev; /* previous random for calculating interpolated random */
-    short       count; /* number of steps along interpolation */
-    short       interval; /* total number of interpolating steps */
+    t_atom_long count; /* steps left until the next random target */
 } RANDO;
 
 typedef double (*randfunc) (RANDO* rando_gen, double val);
 
 ////////////////////////// object struct
-typedef struct _breakgen 
+typedef struct _breakgen
 {
 	t_object	ob;
 	void		*out;
     tickfunc    tick;
-    float       sr; /* current sampling rate */
     OSCIL       *osc;
-    float       freq;
     short       constsig; /* signal for the const wavetype */
-    double      constval;
-    RANDO       *rando_gen;
     randfunc    rando_func;
+    RANDO       rando; /* random state; intensity and interval are attributes */
     t_bool      buffy_mod;
     t_buffer_ref *buffy;
-} t_breakgen;
 
-RANDO* new_rando();
+    /* attributes */
+    t_atom_long wavetype; /* 0 sine, 1 triangle, 2 square, 3 saw down, 4 saw up, 5 constant */
+    double      freq; /* oscillator frequency */
+    double      sr; /* oscillator steps per second */
+    double      constval; /* value for the constant wavetype */
+    t_atom_long random; /* 0 none, 1 replace, 2 multi, 3 multi interp */
+    t_symbol    *buffer; /* buffer~ used by writebuf */
+    double      depth; /* default writefile depth */
+} t_breakgen;
 
 double no_rando(RANDO* rando_gen, double val);
 double rando_replace(RANDO* rando_gen, double val);
@@ -64,10 +67,6 @@ void breakgen_bang(t_breakgen *x);
 void breakgen_getrand(t_breakgen *x);
 
 void breakgen_setter(t_breakgen *x, t_symbol *s, long argc, t_atom *argv);
-void breakgen_wavetype(t_breakgen *x, t_atom_long n);
-void breakgen_setfreq(t_breakgen *x, double f);
-void breakgen_setconstsig(t_breakgen *x, double f);
-void breakgen_setsr(t_breakgen *x, double f);
 void breakgen_writebuf(t_breakgen *x, t_symbol *s, long argc, t_atom *argv);
 void breakgen_writefile(t_breakgen *x, t_symbol *s, long argc, t_atom *argv);
 void breakgen_dowritefile(t_breakgen *x, t_symbol *s, short argc, t_atom *argv);
@@ -77,6 +76,18 @@ double output_val(t_breakgen *x);
 t_max_err breakgen_set_wavetype(t_breakgen *x, t_atom_long n);
 t_max_err breakgen_set_random(t_breakgen *x, t_atom_long n);
 t_bool breakgen_isnum(t_atom *a);
+t_bool breakgen_getpositive(t_breakgen *x, const char *name, long argc, t_atom *argv, double *out);
+
+//// attribute setters
+t_max_err breakgen_attr_wavetype_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_freq_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_sr_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_constval_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_random_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_intensity_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_interval_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_buffer_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
+t_max_err breakgen_attr_depth_set(t_breakgen *x, void *attr, long argc, t_atom *argv);
 
 static t_symbol *buffy_modified;
 //////////////////////// global class pointer variable
@@ -86,47 +97,101 @@ void *breakgen_class;
 void ext_main(void *r)
 {
 	t_class *c;
-	
-	c = class_new("breakgen", (method)breakgen_new, (method)breakgen_free, (long)sizeof(t_breakgen), 
+
+	c = class_new("breakgen", (method)breakgen_new, (method)breakgen_free, (long)sizeof(t_breakgen),
 				  0L /* leave NULL!! */, A_GIMME, 0);
-	
+
     class_addmethod(c, (method)breakgen_bang,			"bang", 0);
-    
-    class_addmethod(c, (method)breakgen_wavetype,		"wavetype",     A_LONG, 0);
-    class_addmethod(c, (method)breakgen_setfreq,		"freq",         A_FLOAT, 0);
-    class_addmethod(c, (method)breakgen_setconstsig,	"constval",     A_FLOAT, 0);
-    class_addmethod(c, (method)breakgen_setsr,          "sr",           A_FLOAT, 0);
-    
+
     class_addmethod(c, (method)breakgen_setter,          "set",         A_GIMME, 0);
     class_addmethod(c, (method)breakgen_writebuf,        "writebuf",    A_GIMME, 0);
     class_addmethod(c, (method)breakgen_writefile,       "writefile",   A_GIMME, 0);
 
 	/* you CAN'T call this from the patcher */
-    class_addmethod(c, (method)breakgen_assist,			"assist",		A_CANT, 0);  
+    class_addmethod(c, (method)breakgen_assist,			"assist",		A_CANT, 0);
     class_addmethod(c, (method)breakgen_getrand,		"getrand",		A_CANT, 0);
     class_addmethod(c, (method)breakgen_notify,			"notify",		A_CANT, 0); // needed by buffer_ref
 
+	/* Attributes. Each one also responds to a message of the same name ("freq 100"),
+	   can be typed into the object box ("@freq 100"), and is saved with the patcher
+	   when changed in the inspector. The setters reject invalid values with an error. */
+	CLASS_ATTR_LONG(c, "wavetype", 0, t_breakgen, wavetype);
+	CLASS_ATTR_ACCESSORS(c, "wavetype", NULL, breakgen_attr_wavetype_set);
+	CLASS_ATTR_ENUMINDEX(c, "wavetype", 0, "sine triangle square \"saw down\" \"saw up\" constant");
+	CLASS_ATTR_LABEL(c, "wavetype", 0, "Waveform");
+
+	CLASS_ATTR_DOUBLE(c, "freq", 0, t_breakgen, freq);
+	CLASS_ATTR_ACCESSORS(c, "freq", NULL, breakgen_attr_freq_set);
+	CLASS_ATTR_LABEL(c, "freq", 0, "Frequency");
+
+	CLASS_ATTR_DOUBLE(c, "sr", 0, t_breakgen, sr);
+	CLASS_ATTR_ACCESSORS(c, "sr", NULL, breakgen_attr_sr_set);
+	CLASS_ATTR_LABEL(c, "sr", 0, "Steps per Second");
+
+	CLASS_ATTR_DOUBLE(c, "constval", 0, t_breakgen, constval);
+	CLASS_ATTR_ACCESSORS(c, "constval", NULL, breakgen_attr_constval_set);
+	CLASS_ATTR_LABEL(c, "constval", 0, "Constant Value");
+
+	CLASS_ATTR_LONG(c, "random", 0, t_breakgen, random);
+	CLASS_ATTR_ACCESSORS(c, "random", NULL, breakgen_attr_random_set);
+	CLASS_ATTR_ENUMINDEX(c, "random", 0, "\"no random\" replace multi \"multi interp\"");
+	CLASS_ATTR_LABEL(c, "random", 0, "Random Mode");
+
+	CLASS_ATTR_DOUBLE(c, "intensity", 0, t_breakgen, rando.intensity);
+	CLASS_ATTR_ACCESSORS(c, "intensity", NULL, breakgen_attr_intensity_set);
+	CLASS_ATTR_LABEL(c, "intensity", 0, "Random Intensity");
+
+	CLASS_ATTR_LONG(c, "interval", 0, t_breakgen, rando.interval);
+	CLASS_ATTR_ACCESSORS(c, "interval", NULL, breakgen_attr_interval_set);
+	CLASS_ATTR_LABEL(c, "interval", 0, "Random Interval");
+
+	CLASS_ATTR_SYM(c, "buffer", 0, t_breakgen, buffer);
+	CLASS_ATTR_ACCESSORS(c, "buffer", NULL, breakgen_attr_buffer_set);
+	CLASS_ATTR_LABEL(c, "buffer", 0, "Buffer");
+
+	CLASS_ATTR_DOUBLE(c, "depth", 0, t_breakgen, depth);
+	CLASS_ATTR_ACCESSORS(c, "depth", NULL, breakgen_attr_depth_set);
+	CLASS_ATTR_LABEL(c, "depth", 0, "File Depth");
+
+	CLASS_ATTR_CATEGORY(c, "wavetype", 0, "Oscillator");
+	CLASS_ATTR_CATEGORY(c, "freq", 0, "Oscillator");
+	CLASS_ATTR_CATEGORY(c, "sr", 0, "Oscillator");
+	CLASS_ATTR_CATEGORY(c, "constval", 0, "Oscillator");
+	CLASS_ATTR_CATEGORY(c, "random", 0, "Random");
+	CLASS_ATTR_CATEGORY(c, "intensity", 0, "Random");
+	CLASS_ATTR_CATEGORY(c, "interval", 0, "Random");
+	CLASS_ATTR_CATEGORY(c, "buffer", 0, "Output");
+	CLASS_ATTR_CATEGORY(c, "depth", 0, "Output");
+
+	CLASS_ATTR_DEFAULT_SAVE(c, "wavetype", 0, "0");
+	CLASS_ATTR_DEFAULT_SAVE(c, "freq", 0, "100.");
+	CLASS_ATTR_DEFAULT_SAVE(c, "sr", 0, "10000.");
+	CLASS_ATTR_DEFAULT_SAVE(c, "constval", 0, "1.");
+	CLASS_ATTR_DEFAULT_SAVE(c, "random", 0, "0");
+	CLASS_ATTR_DEFAULT_SAVE(c, "intensity", 0, "0.05");
+	CLASS_ATTR_DEFAULT_SAVE(c, "interval", 0, "1");
+	CLASS_ATTR_SAVE(c, "buffer", 0);
+	CLASS_ATTR_DEFAULT_SAVE(c, "depth", 0, "1.");
+
+	CLASS_ATTR_ORDER(c, "wavetype", 0, "1");
+	CLASS_ATTR_ORDER(c, "freq", 0, "2");
+	CLASS_ATTR_ORDER(c, "sr", 0, "3");
+	CLASS_ATTR_ORDER(c, "constval", 0, "4");
+	CLASS_ATTR_ORDER(c, "random", 0, "5");
+	CLASS_ATTR_ORDER(c, "intensity", 0, "6");
+	CLASS_ATTR_ORDER(c, "interval", 0, "7");
+	CLASS_ATTR_ORDER(c, "buffer", 0, "8");
+	CLASS_ATTR_ORDER(c, "depth", 0, "9");
+
+	CLASS_ATTR_BASIC(c, "wavetype", 0);
+	CLASS_ATTR_BASIC(c, "freq", 0);
+	CLASS_ATTR_BASIC(c, "sr", 0);
+	CLASS_ATTR_BASIC(c, "random", 0);
+
 	class_register(CLASS_BOX, c);
 	breakgen_class = c;
-    
-    buffy_modified = gensym("buffer_modified");
-}
 
-RANDO* new_rando() {
-    RANDO* nr;
-    
-    nr = (RANDO*) malloc(sizeof(RANDO));
-    if (nr == NULL) {
-        return NULL;
-    }
-    nr->current = 1.0;
-    nr->prev = 1.0;
-    nr->count = 0;
-    nr->intensity = 0.05;
-    nr->interval = 1;
-    nr->mode = 0;
-    
-    return nr;
+    buffy_modified = gensym("buffer_modified");
 }
 
 double no_rando(RANDO* rando_gen, double val) {
@@ -167,7 +232,7 @@ double rando_interp(RANDO* rando_gen, double val) {
 void breakgen_assist(t_breakgen *x, void *b, long m, long a, char *s)
 {
 	if (m == ASSIST_INLET) {
-		strncpy_zero(s, "(bang) Output the next tempo multiplier, (messages) set, wavetype, freq, sr, constval, writefile, writebuf", 512);
+		strncpy_zero(s, "(bang) Output the next tempo multiplier, (messages) attributes, set, writefile, writebuf", 512);
 	}
 	else {
 		strncpy_zero(s, "(float) Tempo multiplier for the next beat's length: 1.0 = unchanged, 1.1 = 10% longer (slower), 0.9 = 10% shorter (faster)", 512);
@@ -177,106 +242,35 @@ void breakgen_assist(t_breakgen *x, void *b, long m, long a, char *s)
 void breakgen_free(t_breakgen *x)
 {
 	free(x->osc);
-    free(x->rando_gen);
     object_free(x->buffy);
 }
 
+/* "set <attribute> <value>" is kept for patches written before these were attributes */
 void breakgen_setter(t_breakgen *x, t_symbol *s, long argc, t_atom *argv)
 {
-    t_atom *ap;
-
-    ap = argv;
+    static const char *names[] = { "wavetype", "freq", "sr", "constval", "random",
+                                   "intensity", "interval", "buffer", "depth" };
+    t_symbol *param;
+    size_t i;
 
     /* every "set" option takes a name and exactly one value */
-    if (argc < 2 || atom_gettype(ap) != A_SYM) {
+    if (argc < 2 || atom_gettype(argv) != A_SYM) {
         object_error((t_object *)x, "set expects a parameter name and a value, e.g. \"set freq 100\"");
         return;
     }
-
-    if (atom_getsym(ap) == gensym("freq")) {
-        ap++;
-        if (breakgen_isnum(ap)) {
-            if (atom_getfloat(ap) > 0.0) {
-                x->freq = atom_getfloat(ap);
-                post("freq set to %f", atom_getfloat(ap));
-            } else {
-                post("frequency must be positive");
-            }
-        } else {
-            post("set freq argument of incorrect type");
+    param = atom_getsym(argv);
+    for (i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        if (param == gensym(names[i])) {
+            object_attr_setvalueof(x, param, 1, argv + 1); /* the attribute's setter validates it */
+            return;
         }
-    } else if (atom_getsym(ap) == gensym("constval")) {
-        ap++;
-        if (breakgen_isnum(ap)) {
-            post("const val set to %f", atom_getfloat(ap));
-            x->constval = atom_getfloat(ap);
-        } else {
-            post("set const val arg of incorrect type");
-        }
-    } else if (atom_getsym(ap) == gensym("wavetype")) {
-        ap++;
-        if (breakgen_isnum(ap)) {
-            breakgen_set_wavetype(x, atom_getlong(ap));
-        } else {
-            post("set wavetype argument of incorrect type");
-        }
-    } else if (atom_getsym(ap) == gensym("random")) {
-        ap++;
-        if (breakgen_isnum(ap)) {
-            breakgen_set_random(x, atom_getlong(ap));
-        } else {
-            post("set random argument of incorrect type");
-        }
-    } else if (atom_getsym(ap) == gensym("interval")) {
-        ap++;
-        if (breakgen_isnum(ap) && atom_getlong(ap) > 0) {
-            x->rando_gen->interval = (short)atom_getlong(ap);
-        } else {
-            post("set random interval argument must be a positive integer");
-        }
-    } else if (atom_getsym(ap) == gensym("intensity")) {
-        ap++;
-        if (breakgen_isnum(ap)) {
-            x->rando_gen->intensity = atom_getfloat(ap);
-        } else {
-            post("set random intensity argument of incorrect type");
-        }
-    } else if (atom_getsym(ap) == gensym("buffer")) {
-        t_symbol *symb;
-        ap++;
-        if (atom_gettype(ap) == A_SYM) {
-            symb = atom_getsym(ap);
-            buffer_ref_set(x->buffy, symb); /* re-point the existing reference rather than leaking a new one */
-            if (buffer_ref_exists(x->buffy) != 0) {
-                object_post((t_object *)x, "\"%s\" buffer referenced", symb->s_name);
-            } else {
-                object_post((t_object *)x, "\"%s\" buffer referenced but doesn't exist", symb->s_name);
-            };
-        } else {
-            post("set buffer argument of incorrect type");
-        }
-    } else if (atom_getsym(ap) == gensym("sr")) {
-        ap++;
-        if (breakgen_isnum(ap)) {
-            if (atom_getfloat(ap) > 0.0) {
-                x->sr = atom_getfloat(ap);
-                free(x->osc);
-                x->osc = new_oscil(x->sr);
-                post("sampling rate set to %f", atom_getfloat(ap));
-            } else {
-                post("sampling rate must be positive");
-            }
-        } else {
-            post("set sr arg of incorrect type");
-        }
-    } else {
-        object_error((t_object *)x, "set: unknown parameter \"%s\"", atom_getsym(ap)->s_name);
     }
+    object_error((t_object *)x, "set: unknown parameter \"%s\"", param->s_name);
 }
 
+/* writebuf <frames> uses the buffer attribute; writebuf <name> <frames> sets it first */
 void breakgen_writebuf(t_breakgen *x, t_symbol *s, long argc, t_atom *argv)
 {
-    t_symbol *bufname;
     t_atom_long framecount;
     t_atom_long num_frames;
     t_atom_long chans;
@@ -285,17 +279,23 @@ void breakgen_writebuf(t_breakgen *x, t_symbol *s, long argc, t_atom *argv)
     float val;
     t_atom_long i, c;
 
-    if (argc < 2 || atom_gettype(argv) != A_SYM || !breakgen_isnum(argv + 1)) {
-        object_error((t_object *)x, "writebuf expects a buffer~ name and a number of frames, e.g. \"writebuf buffy 1000\"");
+    if (argc >= 2 && atom_gettype(argv) == A_SYM && breakgen_isnum(argv + 1)) {
+        object_attr_setvalueof(x, gensym("buffer"), 1, argv);
+        num_frames = atom_getlong(argv + 1);
+    } else if (argc >= 1 && breakgen_isnum(argv)) {
+        num_frames = atom_getlong(argv);
+    } else {
+        object_error((t_object *)x, "writebuf expects a number of frames, optionally after a buffer~ name, e.g. \"writebuf 1000\" or \"writebuf mybuffer 1000\"");
         return;
     }
-    bufname = atom_getsym(argv);
-    num_frames = atom_getlong(argv + 1);
 
-    buffer_ref_set(x->buffy, bufname); /* re-point the existing reference rather than leaking a new one */
+    if (x->buffer == gensym("")) {
+        object_error((t_object *)x, "writebuf: no buffer~ set; use the buffer attribute or \"writebuf <name> <frames>\"");
+        return;
+    }
     buf = buffer_ref_getobject(x->buffy);
     if (!buf) {
-        object_error((t_object *)x, "buffer~ \"%s\" doesn't exist", bufname->s_name);
+        object_error((t_object *)x, "buffer~ \"%s\" doesn't exist", x->buffer->s_name);
         return;
     }
 
@@ -305,7 +305,7 @@ void breakgen_writebuf(t_breakgen *x, t_symbol *s, long argc, t_atom *argv)
 
     bufframe = buffer_locksamples(buf);
     if (!bufframe) {
-        object_error((t_object *)x, "couldn't access the samples of buffer~ \"%s\"", bufname->s_name);
+        object_error((t_object *)x, "couldn't access the samples of buffer~ \"%s\"", x->buffer->s_name);
         return;
     }
     /* samples are interleaved by channel, so write each value to every channel of the frame */
@@ -322,7 +322,7 @@ void breakgen_writebuf(t_breakgen *x, t_symbol *s, long argc, t_atom *argv)
 void breakgen_writefile(t_breakgen *x, t_symbol *s, long argc, t_atom *argv)
 {
     if (argc < 1 || !breakgen_isnum(argv)) {
-        object_error((t_object *)x, "writefile expects a number of frames and an optional amplitude, e.g. \"writefile 2000 1.\"");
+        object_error((t_object *)x, "writefile expects a number of frames and an optional depth, e.g. \"writefile 2000 0.2\"");
         return;
     }
     /* the save dialog must run on the main thread, so do the work there (defer_low copies the atoms) */
@@ -335,15 +335,17 @@ void breakgen_dowritefile(t_breakgen *x, t_symbol *s, short argc, t_atom *argv)
     t_atom_long i;
     float frame;
     FILE *break_out;
-    float amp = 1.0;
+    float amp;
 
     short		path;
     char		ps[MAX_FILENAME_CHARS] = "";
     char        finalpath[MAX_PATH_CHARS];
 
     num_frames = atom_getlong(argv);
-    if (argc > 1 && breakgen_isnum(argv + 1) && atom_getfloat(argv + 1) < 1.0) {
-        amp = atom_getfloat(argv + 1);
+    /* an explicit depth overrides the depth attribute; as before, 1 or more means full depth */
+    amp = x->depth;
+    if (argc > 1 && breakgen_isnum(argv + 1)) {
+        amp = atom_getfloat(argv + 1) < 1.0 ? atom_getfloat(argv + 1) : 1.0;
     }
 
     if (saveas_dialog(ps,&path,NULL)) {
@@ -370,15 +372,15 @@ double output_val(t_breakgen *x)
 {
     double val;
     val = 0.0;
-    
+
     if (x->constsig == 1) {
         val = x->constval;
     } else {
         val = x->tick(x->osc, x->freq) + 1;
     }
-    
-    val = x->rando_func(x->rando_gen, val);
-    
+
+    val = x->rando_func(&x->rando, val);
+
     return val;
 }
 
@@ -393,8 +395,8 @@ t_max_err breakgen_notify(t_breakgen *x, t_symbol *s, t_symbol *msg, void *sende
 void breakgen_getrand(t_breakgen *x) {
     double rn;
     rn = ((double) rand()) / ((double) (RAND_MAX / 2.0));
-    
-    x->rando_gen->current = rn;
+
+    x->rando.current = rn;
 }
 
 void breakgen_bang(t_breakgen *x)
@@ -402,38 +404,6 @@ void breakgen_bang(t_breakgen *x)
     outlet_float(x->out, output_val(x));
 }
 
-void breakgen_setfreq(t_breakgen *x, double f)
-{
-    if (f > 0.0) {
-        x->freq = f;
-    }
-    object_post((t_object *)x, "Frequency set to %f", x->freq);
-}
-
-void breakgen_setsr(t_breakgen *x, double f)
-{
-    if (f > 0.0) {
-        x->sr = f;
-        free(x->osc);
-        x->osc = new_oscil(x->sr);
-    }
-    object_post((t_object *)x, "Sampling rate set to %f", x->sr);
-}
-
-void breakgen_setconstsig(t_breakgen *x, double f)
-{
-    if (f > 0.0) {
-        x->constval = f;
-    }
-    object_post((t_object *)x, "Constant signal value set to %f", x->constval);
-}
-
-void breakgen_wavetype(t_breakgen *x, t_atom_long n)
-{
-    breakgen_set_wavetype(x, n);
-}
-
-/* shared by the "wavetype" message and "set wavetype" */
 t_max_err breakgen_set_wavetype(t_breakgen *x, t_atom_long n)
 {
     if (n < 0 || n > 5) {
@@ -441,6 +411,7 @@ t_max_err breakgen_set_wavetype(t_breakgen *x, t_atom_long n)
         return MAX_ERR_GENERIC;
     }
 
+    x->wavetype = n;
     x->constsig = 0;
 
     switch (n) {
@@ -468,7 +439,6 @@ t_max_err breakgen_set_wavetype(t_breakgen *x, t_atom_long n)
             x->constsig = 1;
             break;
     }
-    post("wavetype set to %lld", (long long)n);
     return MAX_ERR_NONE;
 }
 
@@ -478,6 +448,8 @@ t_max_err breakgen_set_random(t_breakgen *x, t_atom_long n)
         object_error((t_object *)x, "random mode must be between 0 and 3");
         return MAX_ERR_GENERIC;
     }
+
+    x->random = n;
 
     switch (n) {
         case 0:
@@ -497,45 +469,172 @@ t_max_err breakgen_set_random(t_breakgen *x, t_atom_long n)
             x->rando_func = rando_interp;
             break;
     }
-    post("random mode set to %lld", (long long)n);
     return MAX_ERR_NONE;
 }
 
-/* true for ints and floats, so "set freq 100" works as well as "set freq 100." */
+/* true for ints and floats, so "freq 100" works as well as "freq 100." */
 t_bool breakgen_isnum(t_atom *a)
 {
     return atom_gettype(a) == A_LONG || atom_gettype(a) == A_FLOAT;
 }
 
+/* read a single number greater than 0 for the attribute called name */
+t_bool breakgen_getpositive(t_breakgen *x, const char *name, long argc, t_atom *argv, double *out)
+{
+    if (argc < 1 || !argv || !breakgen_isnum(argv)) {
+        object_error((t_object *)x, "%s needs a number", name);
+        return false;
+    }
+    if (atom_getfloat(argv) <= 0.0) {
+        object_error((t_object *)x, "%s must be greater than 0", name);
+        return false;
+    }
+    *out = atom_getfloat(argv);
+    return true;
+}
+
+t_max_err breakgen_attr_wavetype_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    if (argc < 1 || !argv || !breakgen_isnum(argv)) {
+        object_error((t_object *)x, "wavetype needs a number from 0 to 5");
+        return MAX_ERR_GENERIC;
+    }
+    return breakgen_set_wavetype(x, atom_getlong(argv));
+}
+
+t_max_err breakgen_attr_freq_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    double f;
+    if (!breakgen_getpositive(x, "freq", argc, argv, &f)) {
+        return MAX_ERR_GENERIC;
+    }
+    x->freq = f;
+    return MAX_ERR_NONE;
+}
+
+/* changing sr also restarts the waveform from the beginning of its cycle */
+t_max_err breakgen_attr_sr_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    double f;
+    OSCIL *osc;
+    if (!breakgen_getpositive(x, "sr", argc, argv, &f)) {
+        return MAX_ERR_GENERIC;
+    }
+    if (!(osc = new_oscil(f))) {
+        object_error((t_object *)x, "out of memory");
+        return MAX_ERR_OUT_OF_MEM;
+    }
+    free(x->osc);
+    x->osc = osc;
+    x->sr = f;
+    return MAX_ERR_NONE;
+}
+
+t_max_err breakgen_attr_constval_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    double f;
+    if (!breakgen_getpositive(x, "constval", argc, argv, &f)) {
+        return MAX_ERR_GENERIC;
+    }
+    x->constval = f;
+    return MAX_ERR_NONE;
+}
+
+t_max_err breakgen_attr_random_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    if (argc < 1 || !argv || !breakgen_isnum(argv)) {
+        object_error((t_object *)x, "random needs a number from 0 to 3");
+        return MAX_ERR_GENERIC;
+    }
+    return breakgen_set_random(x, atom_getlong(argv));
+}
+
+t_max_err breakgen_attr_intensity_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    if (argc < 1 || !argv || !breakgen_isnum(argv)) {
+        object_error((t_object *)x, "intensity needs a number");
+        return MAX_ERR_GENERIC;
+    }
+    x->rando.intensity = atom_getfloat(argv);
+    return MAX_ERR_NONE;
+}
+
+t_max_err breakgen_attr_interval_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    t_atom_long n;
+    if (argc < 1 || !argv || !breakgen_isnum(argv) || (n = atom_getlong(argv)) < 1) {
+        object_error((t_object *)x, "interval must be a whole number of at least 1");
+        return MAX_ERR_GENERIC;
+    }
+    x->rando.interval = n;
+    if (x->rando.count > n) {
+        x->rando.count = n; /* don't let a glide in progress overshoot the new interval */
+    }
+    return MAX_ERR_NONE;
+}
+
+t_max_err breakgen_attr_buffer_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    t_symbol *name = gensym("");
+    if (argc >= 1 && argv) {
+        if (atom_gettype(argv) != A_SYM) {
+            object_error((t_object *)x, "buffer needs a buffer~ name");
+            return MAX_ERR_GENERIC;
+        }
+        name = atom_getsym(argv);
+    }
+    x->buffer = name;
+    buffer_ref_set(x->buffy, name);
+    return MAX_ERR_NONE;
+}
+
+t_max_err breakgen_attr_depth_set(t_breakgen *x, void *attr, long argc, t_atom *argv)
+{
+    if (argc < 1 || !argv || !breakgen_isnum(argv) || atom_getfloat(argv) < 0.0 || atom_getfloat(argv) > 1.0) {
+        object_error((t_object *)x, "depth must be a number from 0 to 1");
+        return MAX_ERR_GENERIC;
+    }
+    x->depth = atom_getfloat(argv);
+    return MAX_ERR_NONE;
+}
+
 void *breakgen_new(t_symbol *s, long argc, t_atom *argv)
 {
 	t_breakgen *x = NULL;
-    
+
 	if ((x = (t_breakgen *)object_alloc(breakgen_class))) {
 		x->out = outlet_new(x, NULL);
-        
-        x->constsig = 0;
-        x->constval = 1.0;
-        
-        x->rando_gen = NULL;
-        x->rando_gen = new_rando();
-        if(x->rando_gen == NULL){
-            post("no memory for random generator\n");
-        }
-        x->rando_func = no_rando;
-        
-        srand(time(NULL));
-        
+
+        /* defaults (matching the attributes' default values); typed-in @attributes are applied below */
+        x->wavetype = 0;
         x->tick = sinetick;
-        x->sr = 10000.00;
-        x->freq = 100.00;
-        x->osc = NULL;
+        x->constsig = 0;
+        x->freq = 100.0;
+        x->sr = 10000.0;
+        x->constval = 1.0;
+
+        x->random = 0;
+        x->rando_func = no_rando;
+        x->rando.intensity = 0.05;
+        x->rando.interval = 1;
+        x->rando.current = 1.0;
+        x->rando.prev = 1.0;
+        x->rando.count = 0;
+
+        x->depth = 1.0;
+        x->buffer = gensym("");
+        x->buffy = buffer_ref_new((t_object *)x, x->buffer);
+
+        srand(time(NULL));
+
         x->osc = new_oscil(x->sr);
-        if(x->osc == NULL){
-            post("no memory for oscillator\n");
+        if (!x->osc) {
+            object_error((t_object *)x, "out of memory");
+            object_free(x);
+            return NULL;
         }
-        
-        x->buffy = buffer_ref_new((t_object *)x, gensym("buffy"));
+
+        attr_args_process(x, (short)argc, argv);
 	}
 	return (x);
 }
