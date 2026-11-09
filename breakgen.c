@@ -33,8 +33,6 @@ typedef double (*randfunc) (RANDO* rando_gen, double val);
 typedef struct _breakgen 
 {
 	t_object	ob;
-	t_atom		val;
-	t_symbol	*name;
 	void		*out;
     tickfunc    tick;
     float       sr; /* current sampling rate */
@@ -62,9 +60,6 @@ void breakgen_free(t_breakgen *x);
 void breakgen_assist(t_breakgen *x, void *b, long m, long a, char *s);
 
 void breakgen_bang(t_breakgen *x);
-void breakgen_identify(t_breakgen *x);
-void breakgen_dblclick(t_breakgen *x);
-void breakgen_acant(t_breakgen *x);
 
 void breakgen_getrand(t_breakgen *x);
 
@@ -96,14 +91,6 @@ void ext_main(void *r)
 				  0L /* leave NULL!! */, A_GIMME, 0);
 	
     class_addmethod(c, (method)breakgen_bang,			"bang", 0);
-    class_addmethod(c, (method)breakgen_identify,		"identify", 0);
-	CLASS_METHOD_ATTR_PARSE(c, "identify", "undocumented", gensym("long"), 0, "1");
-
-	// here's an otherwise undocumented method, which does something that the user can't actually 
-	// do from the patcher however, we want them to know about it for some weird documentation reason. 
-	// so let's make it documentable. it won't appear in the quickref, because we can't send it from a message.
-	class_addmethod(c, (method)breakgen_acant,			"blooop",       A_CANT, 0);
-	CLASS_METHOD_ATTR_PARSE(c, "blooop", "documentable", gensym("long"), 0, "1");
     
     class_addmethod(c, (method)breakgen_wavetype,		"wavetype",     A_LONG, 0);
     class_addmethod(c, (method)breakgen_setfreq,		"freq",         A_FLOAT, 0);
@@ -116,12 +103,9 @@ void ext_main(void *r)
 
 	/* you CAN'T call this from the patcher */
     class_addmethod(c, (method)breakgen_assist,			"assist",		A_CANT, 0);  
-    class_addmethod(c, (method)breakgen_dblclick,		"dblclick",		A_CANT, 0);
     class_addmethod(c, (method)breakgen_getrand,		"getrand",		A_CANT, 0);
     class_addmethod(c, (method)breakgen_notify,			"notify",		A_CANT, 0); // needed by buffer_ref
 
-	CLASS_ATTR_SYM(c, "name", 0, t_breakgen, name);
-	
 	class_register(CLASS_BOX, c);
 	breakgen_class = c;
     
@@ -179,11 +163,6 @@ double rando_interp(RANDO* rando_gen, double val) {
     return val + ((rn - val) * rando_gen->intensity);
 }
 
-void breakgen_acant(t_breakgen *x)
-{
-	object_post((t_object *)x, "can't touch this!");
-}
-
 /* hover help for the inlet and outlet (Max passes a 512-byte buffer) */
 void breakgen_assist(t_breakgen *x, void *b, long m, long a, char *s)
 {
@@ -200,11 +179,6 @@ void breakgen_free(t_breakgen *x)
 	free(x->osc);
     free(x->rando_gen);
     object_free(x->buffy);
-}
-
-void breakgen_dblclick(t_breakgen *x)
-{
-	object_post((t_object *)x, "I got a double-click");
 }
 
 void breakgen_setter(t_breakgen *x, t_symbol *s, long argc, t_atom *argv)
@@ -428,11 +402,6 @@ void breakgen_bang(t_breakgen *x)
     outlet_float(x->out, output_val(x));
 }
 
-void breakgen_identify(t_breakgen *x)
-{
-	object_post((t_object *)x, "my name is %s", x->name->s_name);
-}
-
 void breakgen_setfreq(t_breakgen *x, double f)
 {
     if (f > 0.0) {
@@ -543,14 +512,6 @@ void *breakgen_new(t_symbol *s, long argc, t_atom *argv)
 	t_breakgen *x = NULL;
     
 	if ((x = (t_breakgen *)object_alloc(breakgen_class))) {
-		x->name = gensym("");
-		if (argc && argv) {
-			x->name = atom_getsym(argv);
-		}
-		if (!x->name || x->name == gensym(""))
-			x->name = symbol_unique();
-		
-		atom_setlong(&x->val, 0);
 		x->out = outlet_new(x, NULL);
         
         x->constsig = 0;
@@ -575,11 +536,6 @@ void *breakgen_new(t_symbol *s, long argc, t_atom *argv)
         }
         
         x->buffy = buffer_ref_new((t_object *)x, gensym("buffy"));
-        if (buffer_ref_exists(x->buffy) != 0) {
-            post("buf ref exists");
-        } else {
-            post("buf ref doesn't exist");
-        };
 	}
 	return (x);
 }
